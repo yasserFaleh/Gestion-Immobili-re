@@ -14,7 +14,7 @@ Make sure you are in the right directory:
 
 Run the app ( Make sure that your local port 5000 is not used ): 
 
-    python api.py
+    python app.py
 
 
 # About   
