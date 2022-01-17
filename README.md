@@ -1,7 +1,10 @@
 # Environment
-For running this project, you need Python 3 and the Flask web Framework.
+For running this project, you need **Python 3** and the **Flask** web Framework.
 ## Install Flask
     pip install flask
+
+##  Sqlite3 
+You don't need to install sqlite3 module. It is included in the standard library (since Python 2.5).
 
 
 # Running the app 
