@@ -1,9 +1,10 @@
-import queue
 import sqlite3 as sl
-from tkinter import N
+from models.asset import Asset
+from models.piece import Piece
 
-from models.user import User     #embedded database
+from models.user import User     
 
+#Manager of the embedded database
 
 class Databasemanager:
 
@@ -44,7 +45,9 @@ class Databasemanager:
                         type TEXT,
                         city TEXT,
                         emailOwner TEXT,
+                        CONSTRAINT fk_users
                         FOREIGN KEY(emailOwner) REFERENCES USER(email)
+                        ON DELETE CASCADE
                     );
                 """)
                 print("Table ASSET  created")
@@ -59,7 +62,9 @@ class Databasemanager:
                         piece_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         size REAL,
                         asset_id INTEGER,
+                        CONSTRAINT fk_assets
                         FOREIGN KEY(asset_id) REFERENCES ASSET(asset_id)
+                        ON DELETE CASCADE
                     );
                 """)
                 print("Table Piece  created")
@@ -87,7 +92,7 @@ class Databasemanager:
             return None
         else : 
             print(result)
-            return  User(result)
+            return  User(result[0],result[1],result[2],result[3],result[4])
         
     # this method suppose that the email doesn't exist so it creates a user 
     def register( self , firstname, lastname, email, password, birthday):
@@ -104,3 +109,50 @@ class Databasemanager:
         cur.execute(query,(user.firstname, user.lastname, newmail, user.password, user.birthday,user.email))
         
         self.con.commit()
+
+
+    def addAsset(self, asset ):
+        sql = ''' INSERT INTO asset(name, description, type, city, emailOwner)
+              VALUES(?,?,?,?,?) '''
+        cur = self.con.cursor()
+        cur.execute(sql, (asset.name, asset.description, asset.type, asset.city, asset.emailowner))
+        self.con.commit()
+        id = cur.lastrowid
+        print("asset added with id = ",id) # printing
+        for piece in asset.pieces:
+            self.addPiece(piece.size,id)
+    
+    #   add Piece to the database without checking the existane of 
+    #       the asset with id given
+    def addPiece(self, size, asset_id):
+        sql = ''' INSERT INTO piece(size, asset_id)
+              VALUES(?,?) '''
+        cur = self.con.cursor()
+        cur.execute(sql, (size, asset_id))
+        self.con.commit()
+        print("piece added with id = ",cur.lastrowid) # printing
+
+    # get asset from the database by city 
+    # if city is equal to 'all` it returns the 50 first asset 
+    def findByCity(self, city):
+        cur = self.con.cursor()
+        if city != 'all':
+            cur.execute("SELECT * FROM Asset WHERE city=?", (city,))
+        else :
+            cur.execute("SELECT * FROM Asset limit 50")
+    
+        rows = cur.fetchall()
+        result = []
+        for row in rows:            
+            result.append(Asset(id=row[0],name=row[1],description=row[2],type=row[3],city=row[4],emailowner=row[5],pieces=self.getPiecesOfAsset(row[0]))) 
+
+        return result
+    
+    def getPiecesOfAsset(self, asset_id):
+        cur = self.con.cursor()
+        cur.execute("SELECT * FROM Piece WHERE asset_id=?", (asset_id,))
+        rows = cur.fetchall()
+        result = []
+        for row in rows:
+            result.append(Piece(id=row[0],size=row[1],asset_id=asset_id))
+        return result

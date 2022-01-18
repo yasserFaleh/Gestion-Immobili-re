@@ -1,0 +1,21 @@
+import json 
+
+class Asset:
+
+    def __init__(self, emailowner,  name=None, description=None, type=None,id=None, city=None, pieces=[]):
+        self.id = id
+        self.name = name
+        self.emailowner = emailowner
+        self.description = description
+        self.type = type
+        self.city = city 
+        self.pieces = pieces
+
+    
+    
+
+
+
+    def to_json(self,):
+        pieces_json = [piece.to_json() for piece in self.pieces]
+        return {"id":self.id,"name":self.name,"description":self.description,"type":self.type,"city":self.city,"emailowner":self.emailowner,"pieces":pieces_json}       
