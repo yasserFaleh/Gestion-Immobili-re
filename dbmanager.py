@@ -18,6 +18,7 @@ class Databasemanager:
             print("Error initilising the embedded database")
             exit(1)
     
+    #create the tables at the start if they are not created 
     def createArchi(self):
         try:
             with self.con:
@@ -71,7 +72,7 @@ class Databasemanager:
         except:
             print("Table Piece already exists")
 
-
+    #check mail if it is already used
     def checkEmailExisting(self, email):
         cur = self.con.cursor()
         cur.execute("SELECT * FROM USER where email=? ",(email,))
@@ -81,13 +82,15 @@ class Databasemanager:
             return None
         else : 
             print(result)
-            return  User(result)
+            return  User(result[0],result[1],result[2],result[3],result[4])
 
+    #check mail and password if they are valid
     def checkUser(self, email, password):
         cur = self.con.cursor()
         cur.execute("SELECT * FROM USER where email=? and password=? ",(email,password,))
         # tuple containg the result of the query 
         result = cur.fetchone()
+        print('result ' , result)
         if result == None:
             return None
         else : 
@@ -102,6 +105,7 @@ class Databasemanager:
         cur.execute(query,(firstname, lastname, email, password,birthday))
         self.con.commit()
         
+    # update information of user
     def updateUser(self, user,newmail):
         cur = self.con.cursor()
         query = ''' Update  USER set firstname= ? ,lastname=? , email=? , password=? ,  birthday = ?
@@ -110,7 +114,7 @@ class Databasemanager:
         
         self.con.commit()
 
-
+    # add an asset 
     def addAsset(self, asset ):
         sql = ''' INSERT INTO asset(name, description, type, city, emailOwner)
               VALUES(?,?,?,?,?) '''
@@ -148,6 +152,7 @@ class Databasemanager:
 
         return result
     
+    # getting the pieces of an asset
     def getPiecesOfAsset(self, asset_id):
         cur = self.con.cursor()
         cur.execute("SELECT * FROM Piece WHERE asset_id=?", (asset_id,))
@@ -156,3 +161,35 @@ class Databasemanager:
         for row in rows:
             result.append(Piece(id=row[0],size=row[1],asset_id=asset_id))
         return result
+
+    # finding an asset by id else it returns None
+    def findAsset( self, asset_id):
+        cur = self.con.cursor()
+        cur.execute("SELECT * FROM asset WHERE asset_id=?", (asset_id,))
+        row = cur.fetchone()
+        if row == None:
+            return None
+        else:
+            return Asset(id=row[0],name=row[1],description=row[2],type=row[3],city=row[4],emailowner=row[5],pieces=self.getPiecesOfAsset(row[0]))
+
+    # modify an existing asset
+    def modifyAsset(self, asset_object):
+        cur = self.con.cursor()
+        query = ''' Update  Asset set name= ? ,description=? , emailowner=? , type=? ,  city = ?
+              WHERE asset_id=?  '''
+        cur.execute(query,(asset_object.name, asset_object.description, asset_object.emailowner, asset_object.type, asset_object.city,asset_object.id))
+        self.con.commit()
+
+        for piece in asset_object.pieces:
+            if piece.id == None:
+                 self.addPiece(piece.size,asset_object.id)
+            else: 
+                self.modifyPiece(piece.id,piece.size)
+
+    # modifying an existing Piece
+    def modifyPiece(self, id, size):
+        cur = self.con.cursor()
+        query = ''' Update  Piece set size= ? 
+              WHERE piece_id=?  '''
+        cur.execute(query,(size,id))
+        self.con.commit()
